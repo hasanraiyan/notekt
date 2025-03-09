@@ -16,7 +16,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
-import { getAllNotes, updateNote, deleteNote } from '../database/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAllNotes, deleteNote, newNote } from '../database/database';
+
+const NOTES_STORAGE_KEY = 'NOTES';
 
 const TAGS = [
   { id: 'all', name: 'All', icon: 'apps-outline' },
@@ -44,28 +47,26 @@ function getTagColor(tagId) {
 
 function formatDate(dateString) {
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return "Invalid Date";
+  }
   const now = new Date();
-
   if (date.toDateString() === now.toDateString()) {
     return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
-
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (date.toDateString() === yesterday.toDateString()) {
     return `Yesterday, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
-
   if (date.getFullYear() === now.getFullYear()) {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
-
   return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 const NoteItem = ({ item, onPress, onLongPress, theme }) => {
   const tagColor = getTagColor(item.tag);
-
   return (
     <TouchableOpacity
       style={[
@@ -88,14 +89,14 @@ const NoteItem = ({ item, onPress, onLongPress, theme }) => {
           <Ionicons name="pin" size={16} color={theme.primary} style={styles.pinIcon} />
         )}
       </View>
-
-      <Text style={[styles.noteContent, { color: theme.secondaryTextColor }]} numberOfLines={2}>
-        {item.content || "No content"}
-      </Text>
-
+<Text style={[styles.noteContent, { color: theme.secondaryTextColor }]} numberOfLines={2}>
+  {String(item.content || '').slice(0, 100) || "No content"}
+</Text>
       <View style={styles.noteFooter}>
         <Text style={[styles.noteDate, { color: theme.tertiaryTextColor }]}>
-          {formatDate(item.date)}
+          {typeof item.date === 'object' && item.date !== null
+            ? formatDate(item.date.toISOString())
+            : formatDate(String(item.date || ''))}
         </Text>
         {item.tag && item.tag !== 'all' && (
           <View style={[styles.tagBadge, { backgroundColor: tagColor + '20' }]}>
@@ -191,11 +192,9 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     let result = [...notes];
-
     if (selectedTag !== 'all') {
       result = result.filter(note => note.tag === selectedTag);
     }
-
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
       result = result.filter(
@@ -204,23 +203,33 @@ const HomeScreen = ({ navigation }) => {
           note.content.toLowerCase().includes(term)
       );
     }
-
     result = sortNotes(result, sortOption);
     setFilteredNotes(result);
   }, [notes, searchTerm, selectedTag, sortOption]);
-
+  
   const sortNotes = (notesToSort, option) => {
-    switch (option) {
-      case 'newest':
-        return [...notesToSort].sort((a, b) => new Date(b.date) - new Date(a.date));
-      case 'oldest':
-        return [...notesToSort].sort((a, b) => new Date(a.date) - new Date(b.date));
-      case 'alphabetical':
-        return [...notesToSort].sort((a, b) => a.title.localeCompare(b.title));
-      default:
-        return notesToSort;
-    }
+    const pinnedNotes = notesToSort.filter(note => note.isPinned);
+    const otherNotes = notesToSort.filter(note => !note.isPinned);
+
+    const sortFunction = (a, b) => {
+      switch (option) {
+        case 'newest':
+          return new Date(b.date) - new Date(a.date);
+        case 'oldest':
+          return new Date(a.date) - new Date(b.date);
+        case 'alphabetical':
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    };
+
+    return [
+      ...pinnedNotes.sort(sortFunction),
+      ...otherNotes.sort(sortFunction)
+    ];
   };
+
 
   const toggleSearch = () => {
     if (isSearchVisible) {
@@ -244,21 +253,36 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  // Pass note data along with a refresh callback when navigating
   const handleNotePress = (note) => {
-    navigation.navigate('NoteDetail', { note, refresh: loadNotes });
+    navigation.navigate('NoteDetail', { id: note.id });
   };
 
-  const handleAddNote = () => {
-    const newNote = {
-      id: Date.now().toString(),
-      title: '',
-      content: '',
-      date: new Date().toISOString(),
-      tag: selectedTag !== 'all' ? selectedTag : 'personal',
-      isPinned: false
-    };
-    navigation.navigate('NoteDetail', { note: newNote, refresh: loadNotes });
+  // Updated: newNote now returns a note ID directly.
+  const handleAddNote = async () => {
+    const noteId = await newNote();
+    if (noteId) {
+      navigation.navigate('NoteDetail', { id: noteId });
+    }  else {
+      Alert.alert('Error', 'Failed to create a new note. Please try again.');
+    }
+  };
+
+  // New function to toggle the pinned state of a note.
+  const togglePinNote = async (note) => {
+    try {
+      const existingNotes = await AsyncStorage.getItem(NOTES_STORAGE_KEY);
+      const notesArray = existingNotes ? JSON.parse(existingNotes) : [];
+      const updatedNotes = notesArray.map(n => {
+        if (n.id === note.id) {
+          return { ...n, isPinned: !n.isPinned }; // Removed date update
+        }
+        return n;
+      });
+      await AsyncStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(updatedNotes));
+      loadNotes();
+    } catch (error) {
+      console.error('Error toggling pin note:', error);
+    }
   };
 
   const handleNoteLongPress = (note) => {
@@ -278,23 +302,6 @@ const HomeScreen = ({ navigation }) => {
         { text: 'Cancel', style: 'cancel' }
       ]
     );
-  };
-
-  const togglePinNote = async (note) => {
-    try {
-      const updatedNote = { ...note, isPinned: !note.isPinned };
-      await updateNote(updatedNote);
-      loadNotes();
-      Alert.alert(
-        note.isPinned ? 'Note Unpinned' : 'Note Pinned',
-        note.isPinned
-          ? 'The note has been unpinned'
-          : 'The note has been pinned to the top of your list'
-      );
-    } catch (error) {
-      console.error('Failed to update note pin status', error);
-      Alert.alert('Error', 'Failed to update note. Please try again.');
-    }
   };
 
   const confirmDeleteNote = (note) => {
@@ -323,7 +330,6 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.background} />
-
       <View style={[styles.header, { backgroundColor: theme.headerBackground || theme.background, borderBottomColor: theme.borderColor }]}>
         <Text style={[styles.headerTitle, { color: theme.textColor }]}>Noty KT</Text>
         <View style={styles.headerActions}>
@@ -342,7 +348,6 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
-
       <Animated.View
         style={[
           styles.searchContainer,
@@ -385,11 +390,9 @@ const HomeScreen = ({ navigation }) => {
           </View>
         )}
       </Animated.View>
-
       <View style={styles.tagFilterContainer}>
         <ScrollableTagFilter tags={TAGS} selectedTag={selectedTag} onSelectTag={setSelectedTag} theme={theme} />
       </View>
-
       {filteredNotes.length > 0 ? (
         <FlatList
           data={filteredNotes}
@@ -405,13 +408,11 @@ const HomeScreen = ({ navigation }) => {
           <EmptyState theme={theme} isDarkMode={isDarkMode} searchTerm={searchTerm} selectedTag={selectedTag} onAddNote={handleAddNote} />
         </View>
       )}
-
       {notes.length > 0 && (
         <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.primary }]} onPress={handleAddNote}>
           <Ionicons name="add" size={24} color="white" />
         </TouchableOpacity>
       )}
-
       <Modal visible={isSortModalVisible} transparent={true} animationType="fade" onRequestClose={() => setIsSortModalVisible(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsSortModalVisible(false)}>
           <View style={[styles.sortModal, { backgroundColor: theme.secondaryBackground, shadowColor: theme.shadowColor }]}>
@@ -437,6 +438,8 @@ const HomeScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
+
+
 
 const ScrollableTagFilter = ({ tags, selectedTag, onSelectTag, theme }) => {
   return (
@@ -512,4 +515,4 @@ const styles = StyleSheet.create({
   sortOptionText: { fontSize: 16 },
 });
 
-export default HomeScreen
+export default HomeScreen;
