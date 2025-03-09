@@ -23,25 +23,37 @@ Notekt is a basic notes application built with React Native and Expo. It allows 
 ```
 notekt/
 ├── .gitignore
-├── App.js                  # Main application component
-├── app.json                # Expo configuration file
-├── index.js                # Entry point for the application
+├── App.js
+├── app.json
+├── index.js
 ├── package-lock.json
 ├── package.json
+├── README.md
 ├── assets/
 │   └── images/
-│       ├── empty-box.png   # Image for empty state
-│       └── icon.png        # App icon
+│       ├── empty-box-dark.png
+│       ├── empty-box.png
+│       └── icon.png
+├── constants/
+│   └── constants.js
 ├── context/
-│   └── AuthContext.js      # Authentication context
+│   ├── AuthContext.js
+│   └── ThemeContext.js
+├── database/
+│   └── database.js
 ├── navigation/
-│   └── NavigationStacks.js # Navigation stacks
-└── screens/
-    ├── HomeScreen.js       # Home screen with list of notes
-    ├── LoginScreen.js      # Login screen
-    ├── NotesDetailScreen.js# Note detail screen for creating/editing notes
-    ├── SignupScreen.js     # Signup screen
-    └── SplashScreen.js     # Splash screen
+│   └── NavigationStacks.js
+├── screens/
+│   ├── HomeScreen.js
+│   ├── NotesDetailScreen.js
+│   ├── SplashScreen.js
+│   ├── authScreen/
+│   │   ├── LoginScreen.js
+│   │   └── SignupScreen.js
+│   └── settings/
+│       ├── AboutScreen.js
+│       ├── AccountScreen.js
+│       └── SettingsScreen.js
 ```
 
 ## Setup
@@ -61,4 +73,4 @@ notekt/
 ## Notes
 
 *   This is a simplified notes application and does not include features such as cloud storage or advanced editing capabilities.
-*   The authentication is implemented with a dummy token and is not secure.
+*   The authentication is implemented with a dummy token and is not secure. The username is "user" and the password is "password".
