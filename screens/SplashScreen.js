@@ -12,15 +12,24 @@ const SplashScreen = ({ navigation }) => {
         const userToken = await AsyncStorage.getItem('userToken');
         if (userToken) {
           setIsSignedIn(true);
-          navigation.replace('Home');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
         } else {
           setIsSignedIn(false);
-          navigation.replace('Login');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
         }
       } catch (error) {
         console.error('Error checking login status:', error);
         // Handle error appropriately, e.g., navigate to an error screen
-        navigation.replace('Login'); // Or an error screen
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
       }
     };
 

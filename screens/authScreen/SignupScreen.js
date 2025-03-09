@@ -1,34 +1,34 @@
+// screens/SignupScreen.js
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
-const LoginScreen = ({ navigation }) => {
+const SignupScreen = ({ navigation }) => {
   const { signIn } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
-  const handleLogin = async () => {
-    if (username && password) {
-      await signIn();
-      navigation.replace('Home');
-    }
+  const handleSignUp = async () => {
+    // In a real app, you would validate the username and password
+    // For this example, we just sign in
+    await signIn(navigation);
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <Image
-          source={require('../assets/images/icon.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
-      
-      <Text style={styles.welcomeText}>Welcome back</Text>
-      
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="chevron-back" size={24} color="black" />
+      </TouchableOpacity>
+
+      <Text style={styles.headerText}>Create account</Text>
+
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -36,7 +36,7 @@ const LoginScreen = ({ navigation }) => {
           value={username}
           onChangeText={setUsername}
         />
-        
+
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
@@ -45,30 +45,50 @@ const LoginScreen = ({ navigation }) => {
             onChangeText={setPassword}
             secureTextEntry={!passwordVisible}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.eyeIcon}
             onPress={() => setPasswordVisible(!passwordVisible)}
           >
-            <Ionicons 
-              name={passwordVisible ? "eye-outline" : "eye-off-outline"} 
-              size={24} 
-              color="#6B7280" 
+            <Ionicons
+              name={passwordVisible ? "eye-outline" : "eye-off-outline"}
+              size={24}
+              color="#6B7280"
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!confirmPasswordVisible}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+          >
+            <Ionicons
+              name={confirmPasswordVisible ? "eye-outline" : "eye-off-outline"}
+              size={24}
+              color="#6B7280"
             />
           </TouchableOpacity>
         </View>
       </View>
-      
-      <TouchableOpacity 
-        style={styles.loginButton}
-        onPress={handleLogin}
+
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={handleSignUp}
       >
-        <Text style={styles.loginButtonText}>Login</Text>
+        <Text style={styles.createButtonText}>Create account</Text>
       </TouchableOpacity>
-      
-      <View style={styles.signupContainer}>
-        <Text style={styles.signupText}>Don't have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-          <Text style={styles.signupLink}>Sign up</Text>
+
+      <View style={styles.loginContainer}>
+        <Text style={styles.loginText}>Already have an account? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.loginLink}>Sign in</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -81,21 +101,17 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: 'white',
   },
-  logoContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    backgroundColor: '#7B68EE',
+  backButton: {
+    marginTop: 40,
+    marginBottom: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 80,
-    marginBottom: 30,
   },
-  logo: {
-    width: 30,
-    height: 30,
-  },
-  welcomeText: {
+  headerText: {
     fontSize: 36,
     fontWeight: 'bold',
     marginBottom: 50,
@@ -115,6 +131,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    marginBottom: 20,
   },
   passwordInput: {
     flex: 1,
@@ -124,33 +141,33 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 10,
   },
-  loginButton: {
+  createButton: {
     backgroundColor: '#7B68EE',
     borderRadius: 10,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 20,
   },
-  loginButtonText: {
+  createButtonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  signupContainer: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 'auto',
     marginBottom: 30,
   },
-  signupText: {
+  loginText: {
     color: '#6B7280',
     fontSize: 16,
   },
-  signupLink: {
+  loginLink: {
     color: '#7B68EE',
     fontSize: 16,
     fontWeight: '500',
   },
 });
 
-export default LoginScreen;
+export default SignupScreen;

@@ -1,13 +1,13 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import SplashScreen from '../screens/SplashScreen';
-import LoginScreen from '../screens/LoginScreen';
-import SignupScreen from '../screens/SignupScreen';
+import LoginScreen from '../screens/authScreen/LoginScreen';
+import SignupScreen from '../screens/authScreen/SignupScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NotesDetailScreen from '../screens/NotesDetailScreen';
-import AccountScreen from '../screens/AccountScreen';
-import AboutScreen from '../screens/AboutScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import AccountScreen from '../screens/settings/AccountScreen';
+import AboutScreen from '../screens/settings/AboutScreen';
+import SettingsScreen from '../screens/settings/SettingsScreen';
 
 
 const Stack = createStackNavigator();

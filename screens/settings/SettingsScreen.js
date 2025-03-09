@@ -1,49 +1,57 @@
-// SettingsScreen.js
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   Switch,
   ScrollView,
   Alert,
-  Image
+  Image,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { clearDB } from '../../database/database';
 
-const SettingItem = ({ icon, title, subtitle, onPress, value, isSwitch }) => (
-  <TouchableOpacity 
-    style={styles.settingItem} 
+
+const SettingItem = ({ icon, title, subtitle, onPress, value, isSwitch, theme }) => (
+  <TouchableOpacity
+    style={[styles.settingItem, { borderBottomColor: theme.secondaryBackground }]}
     onPress={onPress}
     disabled={isSwitch}
   >
-    <View style={styles.settingIcon}>
-      <Ionicons name={icon} size={22} color="#7B68EE" />
+    <View style={[styles.settingIcon, {backgroundColor: theme.settingIconBackground}]}>
+      <Ionicons name={icon} size={22} color={theme.primary} />
     </View>
     <View style={styles.settingContent}>
-      <Text style={styles.settingTitle}>{title}</Text>
-      {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
+      <Text style={[styles.settingTitle, { color: theme.textColor }]}>{title}</Text>
+      {subtitle && (
+        <Text style={[styles.settingSubtitle, { color: theme.secondaryTextColor }]}>
+          {subtitle}
+        </Text>
+      )}
     </View>
     {isSwitch ? (
       <Switch
         value={value}
         onValueChange={onPress}
-        trackColor={{ false: '#E5E7EB', true: '#7B68EE' }}
+        trackColor={{ false: '#E5E7EB', true: theme.primary }}
         thumbColor={'#FFF'}
       />
     ) : (
-      <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+      <Ionicons name="chevron-forward" size={20} color={theme.textColor} />
     )}
   </TouchableOpacity>
 );
 
-const SettingSection = ({ title, children }) => (
+const SettingSection = ({ title, children, theme }) => (
   <View style={styles.settingSection}>
     <Text style={styles.sectionTitle}>{title}</Text>
-    <View style={styles.sectionContent}>
+    <View style={[styles.sectionContent, { backgroundColor: theme.secondaryBackground }]}>
       {children}
     </View>
   </View>
@@ -51,154 +59,127 @@ const SettingSection = ({ title, children }) => (
 
 const SettingsScreen = ({ navigation }) => {
   const { signOut } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { theme, toggleTheme, isDarkMode } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [appVersion, setAppVersion] = useState('v0.0.1');
-  
-  // Load settings from AsyncStorage when the component mounts
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const darkMode = await AsyncStorage.getItem('darkMode');
-        const notifications = await AsyncStorage.getItem('notifications');
-        const autoSave = await AsyncStorage.getItem('autoSave');
-        
-        setIsDarkMode(darkMode === 'true');
-        setNotificationsEnabled(notifications !== 'false'); // Default true
-        setAutoSaveEnabled(autoSave !== 'false'); // Default true
-      } catch (error) {
-        console.error('Failed to load settings', error);
-      }
-    };
-    
-    loadSettings();
-  }, []);
-  
-  // Save settings to AsyncStorage when they change
-  const saveSettings = async (key, value) => {
+
+  const loadSettings = useCallback(async () => {
     try {
-      await AsyncStorage.setItem(key, String(value));
+      const notifications = await AsyncStorage.getItem('notifications');
+      const autoSave = await AsyncStorage.getItem('autoSave');
+
+      setNotificationsEnabled(notifications === null ? true : notifications !== 'false'); // default true if null
+      setAutoSaveEnabled(autoSave === null ? true : autoSave !== 'false'); // default true if null
     } catch (error) {
-      console.error(`Failed to save ${key} setting`, error);
+      console.error('Failed to load settings', error);
     }
-  };
-  
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    const newValue = !isDarkMode;
-    setIsDarkMode(newValue);
-    saveSettings('darkMode', newValue);
-    // You would also need to update the app's theme here
-  };
-  
-  // Toggle notifications
-  const toggleNotifications = () => {
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  const toggleNotifications = async () => {
     const newValue = !notificationsEnabled;
     setNotificationsEnabled(newValue);
-    saveSettings('notifications', newValue);
+    try {
+      await AsyncStorage.setItem('notifications', newValue.toString());
+    } catch (error) {
+      console.error('Failed to save notification setting', error);
+    }
   };
-  
-  // Toggle auto-save
-  const toggleAutoSave = () => {
+
+  const toggleAutoSave = async () => {
     const newValue = !autoSaveEnabled;
     setAutoSaveEnabled(newValue);
-    saveSettings('autoSave', newValue);
+    try {
+      await AsyncStorage.setItem('autoSave', newValue.toString());
+    } catch (error) {
+      console.error('Failed to save auto-save setting', error);
+    }
   };
-  
-  // Navigate to account screen
+
   const navigateToAccount = () => {
     navigation.navigate('Account');
   };
-  
-  // Navigate to about screen
+
   const navigateToAbout = () => {
     navigation.navigate('About');
   };
-  
-  // Handle sign out
+
   const handleSignOut = () => {
     Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          onPress: () => signOut(),
-          style: 'destructive',
-        },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', onPress: () => signOut(), style: 'destructive' },
       ]
     );
   };
-  
-  // Handle clear data
+
   const handleClearData = () => {
     Alert.alert(
       'Clear All Data',
       'Are you sure you want to clear all notes? This action cannot be undone.',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear',
           onPress: async () => {
             try {
-              await AsyncStorage.removeItem('notes');
-              Alert.alert('Success', 'All notes have been cleared.');
+              await clearDB();
+              Alert.alert('Success', 'All notes have been cleared from the database.');
             } catch (error) {
               console.error('Failed to clear notes', error);
               Alert.alert('Error', 'Failed to clear notes. Please try again.');
             }
           },
-          style: 'destructive',
+          style: 'destructive'
         },
       ]
     );
   };
-  
+
   return (
-    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.background}
+      />
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.secondaryBackground }]}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons 
-            name="arrow-back" 
-            size={24} 
-            color={isDarkMode ? "white" : "black"}
-          />
+          <Ionicons name="chevron-back" size={24} color={theme.textColor} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: theme.textColor }]}>Settings</Text>
       </View>
-      
+
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
           <Image
-            source={require('../assets/images/icon.png')}
-            style={styles.profileImage}
+            source={require('../../assets/images/icon.png')}
+            style={[styles.profileImage,{backgroundColor: theme.primary}] }
           />
-          <Text style={[styles.appName, isDarkMode && styles.darkText]}>Noty KT</Text>
+          <Text style={[styles.appName, { color: theme.textColor }]}>Noty KT</Text>
           <Text style={styles.versionText}>{appVersion}</Text>
         </View>
-        
-        <SettingSection title="Appearance">
+
+        <SettingSection title="Appearance" theme={theme}>
           <SettingItem
             icon="moon-outline"
             title="Dark Mode"
             isSwitch={true}
             value={isDarkMode}
-            onPress={toggleDarkMode}
+            onPress={toggleTheme}
+            theme={theme}
           />
         </SettingSection>
-        
-        <SettingSection title="Preferences">
+
+        <SettingSection title="Preferences" theme={theme}>
           <SettingItem
             icon="notifications-outline"
             title="Notifications"
@@ -206,6 +187,7 @@ const SettingsScreen = ({ navigation }) => {
             isSwitch={true}
             value={notificationsEnabled}
             onPress={toggleNotifications}
+            theme={theme}
           />
           <SettingItem
             icon="save-outline"
@@ -214,76 +196,80 @@ const SettingsScreen = ({ navigation }) => {
             isSwitch={true}
             value={autoSaveEnabled}
             onPress={toggleAutoSave}
+            theme={theme}
           />
         </SettingSection>
-        
-        <SettingSection title="Account">
+
+        <SettingSection title="Account" theme={theme}>
           <SettingItem
             icon="person-outline"
             title="Account Settings"
             subtitle="Manage your profile and preferences"
             onPress={navigateToAccount}
+            theme={theme}
           />
           <SettingItem
             icon="log-out-outline"
             title="Sign Out"
             subtitle="Log out of your account"
             onPress={handleSignOut}
+            theme={theme}
           />
         </SettingSection>
-        
-        <SettingSection title="Data">
+
+        <SettingSection title="Data" theme={theme}>
           <SettingItem
             icon="cloud-upload-outline"
             title="Backup & Sync"
             subtitle="Backup your notes to the cloud"
             onPress={() => Alert.alert('Coming Soon', 'This feature will be available in a future update.')}
+            theme={theme}
           />
           <SettingItem
             icon="trash-outline"
             title="Clear All Data"
             subtitle="Delete all notes"
             onPress={handleClearData}
+            theme={theme}
           />
         </SettingSection>
-        
-        <SettingSection title="About">
+
+        <SettingSection title="About" theme={theme}>
           <SettingItem
             icon="information-circle-outline"
             title="About Noty KT"
             subtitle="Learn more about the app"
             onPress={navigateToAbout}
+            theme={theme}
           />
           <SettingItem
             icon="heart-outline"
             title="Rate the App"
             subtitle="If you enjoy using Noty KT, please rate it"
             onPress={() => Alert.alert('Coming Soon', 'This feature will be available when the app is published.')}
+            theme={theme}
           />
           <SettingItem
             icon="help-circle-outline"
             title="Help & Support"
             subtitle="Get assistance or report issues"
-            onPress={() => Alert.alert('Support', 'For support, please join our Slack channel or email shreyaspatil@gmail.com')}
+            onPress={() => Alert.alert('Support', 'For support, please join our Slack channel or email raiyanhasan2006@gmail.com')}
+            theme={theme}
           />
         </SettingSection>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
-  },
-  darkContainer: {
-    backgroundColor: '#121212',
   },
   header: {
+    paddingTop: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
@@ -291,7 +277,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
@@ -299,9 +284,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-  },
-  darkText: {
-    color: 'white',
   },
   profileSection: {
     alignItems: 'center',
@@ -312,8 +294,8 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#7B68EE',
     marginBottom: 10,
+
   },
   appName: {
     fontSize: 22,
@@ -336,7 +318,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   sectionContent: {
-    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -346,13 +327,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   settingIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EDE9FE',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -366,7 +345,6 @@ const styles = StyleSheet.create({
   },
   settingSubtitle: {
     fontSize: 12,
-    color: '#6B7280',
     marginTop: 4,
   },
 });

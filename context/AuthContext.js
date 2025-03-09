@@ -1,32 +1,39 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext();
 
+const HARDCODED_USERNAME = 'user';
+const HARDCODED_PASSWORD = 'password';
+
 export const AuthProvider = ({ children }) => {
   const [isSignedIn, setIsSignedIn] = useState(false);
 
+  const checkAuthStatus = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      setIsSignedIn(!!token);
+    } catch (e) {
+      console.error("Error in checkAuthStatus", e);
+    }
+  };
+
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        setIsSignedIn(!!token && validateToken(token));
-      } catch (e) {
-        console.error("Error in checkAuthStatus", e)
-      }
-    };
     checkAuthStatus();
   }, []);
 
-  const validateToken = (token) => {
-    // In a real app, you would validate the token with the server
-    // For this example, we just check if the token exists
-    return !!token;
-  };
-
-  const signIn = async () => {
-    await AsyncStorage.setItem('userToken', 'dummy-auth-token');
-    setIsSignedIn(true);
+  const signIn = async (username, password, navigation) => {
+    if (username === HARDCODED_USERNAME && password === HARDCODED_PASSWORD) {
+      try {
+        await AsyncStorage.setItem('userToken', 'real-auth-token');
+        setIsSignedIn(true);
+      } catch (error) {
+        Alert.alert("Login Failed", "Something went wrong.");
+        console.error("Login Error:", error);
+      }
+    } else {
+      Alert.alert("Login Failed", "Invalid credentials.");
+    }
   };
 
   const signOut = async () => {
@@ -35,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isSignedIn, signIn, signOut }}>
+    <AuthContext.Provider value={{ isSignedIn, setIsSignedIn, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
