@@ -7,29 +7,29 @@ import { useFocusEffect } from '@react-navigation/native';
 
 // Initial notes data - used only when AsyncStorage is empty for the first time
 const initialNotesData = [{
-    id: '1',
-    title: 'Youtube script ideas 🎬',
-    content: 'There are many apps in Android that can run or emulate other operating systems, via utilizing hardware support for platform...',
-    date: new Date('2020-10-15T10:30:00')
-  },
-  {
-    id: '2',
-    title: 'Datastore Blog Ideas 🦋',
-    content: 'Google Play Protect, regular security updates and control over how your data is shared. We\'re dedicated to securing Android\'s 2.5 billion+ active devices every day and keeping information private.\n\nScreen readers, speech-to-text and some of the newest ways to experience the world your way.\n\nChoices for work, gaming, 5G streaming and anything else. There are over 24,000 phones and tablets that run on Android globally. So no matter what you\'re looking for, there\'s something for you.',
-    date: new Date('2020-10-12T09:30:00')
-  },
-  {
-    id: '3',
-    title: 'College skit review 😄',
-    content: 'There are many apps in Android that can run or emulate other operating systems, via utilizing hardware support for platform...',
-    date: new Date('2020-10-08T14:15:00')
-  },
-  {
-    id: '4',
-    title: 'Social media blogs 📕',
-    content: 'There are many apps in Android that can run or emulate other operating systems, via utilizing hardware support for platform...',
-    date: new Date('2020-10-05T16:45:00')
-  },
+  id: '1',
+  title: 'Youtube script ideas 🎬',
+  content: 'There are many apps in Android that can run or emulate other operating systems, via utilizing hardware support for platform...',
+  date: new Date('2020-10-15T10:30:00')
+},
+{
+  id: '2',
+  title: 'Datastore Blog Ideas 🦋',
+  content: 'Google Play Protect, regular security updates and control over how your data is shared. We\'re dedicated to securing Android\'s 2.5 billion+ active devices every day and keeping information private.\n\nScreen readers, speech-to-text and some of the newest ways to experience the world your way.\n\nChoices for work, gaming, 5G streaming and anything else. There are over 24,000 phones and tablets that run on Android globally. So no matter what you\'re looking for, there\'s something for you.',
+  date: new Date('2020-10-12T09:30:00')
+},
+{
+  id: '3',
+  title: 'College skit review 😄',
+  content: 'There are many apps in Android that can run or emulate other operating systems, via utilizing hardware support for platform...',
+  date: new Date('2020-10-08T14:15:00')
+},
+{
+  id: '4',
+  title: 'Social media blogs 📕',
+  content: 'There are many apps in Android that can run or emulate other operating systems, via utilizing hardware support for platform...',
+  date: new Date('2020-10-05T16:45:00')
+},
 ];
 
 const NoteItem = ({ item, onPress }) => (
@@ -112,7 +112,7 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>All Notes</Text>
         <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
           <Ionicons
@@ -120,6 +120,15 @@ const HomeScreen = ({ navigation }) => {
             size={24}
             color={isDarkMode ? "white" : "black"}
           />
+        </TouchableOpacity>
+      </View> */}
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>All Notes</Text>
+        <TouchableOpacity
+          style={styles.themeToggle}
+          onPress={() => navigation.navigate("Settings")}
+        >
+          <Ionicons name="settings-outline" size={24} color={isDarkMode ? "white" : "black"} />
         </TouchableOpacity>
       </View>
 

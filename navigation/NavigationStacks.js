@@ -5,6 +5,10 @@ import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NotesDetailScreen from '../screens/NotesDetailScreen';
+import AccountScreen from '../screens/AccountScreen';
+import AboutScreen from '../screens/AboutScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+
 
 const Stack = createStackNavigator();
 
@@ -20,5 +24,8 @@ export const AppStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Home" component={HomeScreen} />
     <Stack.Screen name="NoteDetail" component={NotesDetailScreen} />
+    <Stack.Screen name="About" component={AboutScreen} />
+    <Stack.Screen name="Settings" component={SettingsScreen} />
+    <Stack.Screen name="Account" component={AccountScreen} />
   </Stack.Navigator>
 );
