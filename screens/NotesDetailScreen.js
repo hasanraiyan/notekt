@@ -1,4 +1,4 @@
-
+// NotesDetailScreen.js
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -22,23 +22,6 @@ const NotesDetailScreen = ({ route, navigation }) => {
   const [content, setContent] = useState(note.content);
  const [date, setDate] = useState(note.date ? new Date(note.date) : new Date());
 
-
-  useEffect(() => {
-    // Load existing notes from AsyncStorage on component mount
-    const loadNotes = async () => {
-      try {
-        const storedNotes = await AsyncStorage.getItem('notes');
-        if (storedNotes) {
-          // Parse the stored notes and update the state
-          const parsedNotes = JSON.parse(storedNotes);
-        }
-      } catch (error) {
-        console.error('Failed to load notes from AsyncStorage', error);
-      }
-    };
-
-    loadNotes();
-  }, []);
 
   // Format the date: "12 October 2020, 9:30 AM"
   const formattedDate = () => {

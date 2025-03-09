@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+// HomeScreen.js
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
-const NOTES_DATA = [
-  {
+// Initial notes data - used only when AsyncStorage is empty for the first time
+const initialNotesData = [{
     id: '1',
     title: 'Youtube script ideas 🎬',
     content: 'There are many apps in Android that can run or emulate other operating systems, via utilizing hardware support for platform...',
@@ -40,7 +43,7 @@ const NoteItem = ({ item, onPress }) => (
 
 const EmptyState = () => (
   <View style={styles.emptyStateContainer}>
-    <Image 
+    <Image
       source={require('../assets/images/empty-box.png')} // Make sure this image path is correct
       style={styles.emptyStateImage}
     />
@@ -52,9 +55,39 @@ const EmptyState = () => (
 );
 
 const HomeScreen = ({ navigation }) => {
-  const [notes, setNotes] = useState(NOTES_DATA);
+  const [notes, setNotes] = useState([]); // Initialize notes state to an empty array
   const [isDarkMode, setIsDarkMode] = useState(false);
-  
+
+  // Function to load notes from AsyncStorage
+  const loadNotes = async () => {
+    try {
+      const storedNotes = await AsyncStorage.getItem('notes');
+      if (storedNotes) {
+        // If notes are found in AsyncStorage, parse and set them to state
+        setNotes(JSON.parse(storedNotes));
+      } else {
+        // If no notes in AsyncStorage (first app launch or storage cleared),
+        // initialize with initialNotesData and save to AsyncStorage
+        await AsyncStorage.setItem('notes', JSON.stringify(initialNotesData));
+        setNotes(initialNotesData); // Set state with initial data
+      }
+    } catch (error) {
+      console.error('Failed to load notes from AsyncStorage', error);
+    }
+  };
+
+  // Load notes on component mount (first render)
+  useEffect(() => {
+    loadNotes();
+  }, []);
+
+  // Reload notes when the screen comes into focus.
+  useFocusEffect(
+    useCallback(() => {
+      loadNotes(); // Call loadNotes to refresh the list when screen is focused
+    }, [])
+  );
+
   // Navigate to note detail screen
   const handleNotePress = (note) => {
     navigation.navigate('NoteDetail', { note });
@@ -62,13 +95,13 @@ const HomeScreen = ({ navigation }) => {
 
   // Create a new note
   const handleAddNote = () => {
-    navigation.navigate('NoteDetail', { 
-      note: { 
-        id: null, 
-        title: '', 
-        content: '', 
-        date: new Date() 
-      } 
+    navigation.navigate('NoteDetail', {
+      note: {
+        id: null,
+        title: '',
+        content: '',
+        date: new Date()
+      }
     });
   };
 
@@ -82,14 +115,14 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>All Notes</Text>
         <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-          <Ionicons 
-            name={isDarkMode ? "sunny-outline" : "moon-outline"} 
-            size={24} 
-            color={isDarkMode ? "white" : "black"} 
+          <Ionicons
+            name={isDarkMode ? "sunny-outline" : "moon-outline"}
+            size={24}
+            color={isDarkMode ? "white" : "black"}
           />
         </TouchableOpacity>
       </View>
-      
+
       {notes.length > 0 ? (
         <FlatList
           data={notes}
@@ -102,8 +135,8 @@ const HomeScreen = ({ navigation }) => {
       ) : (
         <EmptyState />
       )}
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.addButton}
         onPress={handleAddNote}
       >
